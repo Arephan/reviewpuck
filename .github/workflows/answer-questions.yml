@@ -14,6 +14,12 @@ jobs:
     if: github.event.issue.pull_request && contains(github.event.comment.body, '?')
     runs-on: ubuntu-latest
     steps:
+      - name: Debug Info
+        run: |
+          echo "Comment: ${{ github.event.comment.body }}"
+          echo "PR: ${{ github.event.issue.pull_request }}"
+          echo "Triggered!"
+          
       - name: Answer Question
         uses: actions/github-script@v7
         env:
@@ -86,4 +92,11 @@ Answer in 2-3 sentences. Be helpful and human.`;
               }
             } catch (error) {
               console.log('Failed to answer:', error.message);
+              // Post error comment for debugging
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `Debug: Failed to answer - ${error.message}`
+              });
             }

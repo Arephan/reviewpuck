@@ -25,17 +25,16 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: "--max-tokens 300"
           custom_instructions: |
-            BE EXTREMELY CONCISE. Maximum 2 sentences for everything.
+            BE ULTRA BRIEF. Your response MUST fit in 200 tokens total.
             
-            For PR reviews:
+            Format:
             # 🔍 Code Review
             ## What's this PR doing?
-            [Exactly 2 sentences. Say what it adds and why.]
+            [ONE sentence: what it adds]
             
-            ## Review Summary
-            [One line: "⚠️ Found X things:" or "✅ Looks good"]
+            ## Review Summary  
+            [ONE line: ✅ Looks good OR ⚠️ Found X issues: list]
             
-            For line questions: 1 sentence answer. That's it.
-            
-            NO EXPLANATIONS. NO EXTRA DETAILS. Help fast.
+            For questions: Answer in ONE sentence only.

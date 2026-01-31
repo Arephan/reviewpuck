@@ -106,6 +106,12 @@ async function handleReadyPR(
   const analysis = await analyzeInline(pr, claude);
   core.info(`Generated ${analysis.comments.length} inline comments`);
 
+  // Filter out explanations - only post actionable comments inline
+  const actionableComments = analysis.comments.filter(
+    (c) => c.severity !== 'explanation'
+  );
+  core.info(`Posting ${actionableComments.length} actionable comments (skipping explanations)`);
+
   // Get HEAD commit SHA for posting review comments
   const headSha = await github.getPRHeadSha(prNumber);
 
@@ -113,7 +119,7 @@ async function handleReadyPR(
   const commentResults = await github.postReviewComments(
     prNumber,
     headSha,
-    analysis.comments.map((c) => ({
+    actionableComments.map((c) => ({
       path: c.file,
       line: c.line,
       body: c.body,

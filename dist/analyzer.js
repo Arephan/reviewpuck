@@ -268,21 +268,32 @@ Found ${commentLinks.length} items for review (~${analysis.estimatedReadTimeMinu
     });
     let navigation = '';
     let index = 1;
-    // Order by priority
+    // Order by priority (skip explanation since they're not posted inline)
     const severities = ['security', 'bug', 'warning', 'suggestion', 'explanation'];
     for (const severity of severities) {
         const items = groups[severity];
         if (items.length === 0)
             continue;
         const emoji = getEmojiForSeverity(severity);
-        navigation += `### ${emoji} ${severity.charAt(0).toUpperCase() + severity.slice(1)}\n\n`;
+        const severityLabel = severity.charAt(0).toUpperCase() + severity.slice(1);
+        // Make each section collapsible
+        const isExplanation = severity === 'explanation';
+        const defaultOpen = !isExplanation; // Explanations collapsed by default
+        if (defaultOpen) {
+            // Critical sections: open by default
+            navigation += `<details open>\n<summary><strong>${emoji} ${severityLabel} (${items.length})</strong></summary>\n\n`;
+        }
+        else {
+            // Explanations: collapsed by default
+            navigation += `<details>\n<summary><strong>${emoji} ${severityLabel} (${items.length})</strong></summary>\n\n`;
+        }
         for (const item of items) {
             // GitHub doesn't support direct linking to review comments from issues,
             // but we can at least show the location
             navigation += `${index}. **${item.title}** → \`${item.path}:${item.line}\`\n`;
             index++;
         }
-        navigation += '\n';
+        navigation += '\n</details>\n\n';
     }
     const footer = `---
 

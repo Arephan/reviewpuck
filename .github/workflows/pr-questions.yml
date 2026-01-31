@@ -15,8 +15,7 @@ jobs:
   reply:
     runs-on: ubuntu-latest
     if: |
-      (github.event.issue.pull_request != null || github.event.pull_request != null) && 
-      (contains(github.event.comment.body, '?') || contains(github.event.review_comment.body || '', '?'))
+      github.event.issue.pull_request != null && contains(github.event.comment.body, '?')
     
     steps:
       - uses: actions/github-script@v7

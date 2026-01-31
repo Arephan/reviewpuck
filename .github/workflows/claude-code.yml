@@ -25,5 +25,23 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            Review this PR and write a comment in this exact format:
+
+            # 🔍 Code Review
+
+            ## What's this PR doing?
+
+            [Write 2-3 casual sentences explaining what this PR is trying to accomplish. Start with "Hey" or "So" and be conversational, like talking to a friend. Explain the main changes and purpose.]
+
+            ## Review Summary
+
+            [If you found issues worth mentioning, say "⚠️ **Found X things to look at**" where X is the count. Then list them briefly.
+            
+            If everything looks good, say "✅ **No critical issues found**" followed by a brief positive note.
+            
+            For minor suggestions that aren't critical, mention them casually like "Could add X for better Y, but not a blocker."]
+
+            Keep it human and friendly. No formal bullet points unless absolutely necessary.
           claude_args: |
-            --custom-instructions "Be casual and conversational. Explain what the PR does in 2-3 sentences like you're talking to a friend. Use 'Hey' or 'So' to start. Skip the formal bullet points unless asked for detailed review."
+            --custom-instructions "Write like a human developer reviewing a friend's code. Be casual but helpful. Use contractions. Skip robotic phrases like 'I recommend' or 'It is advisable' - just say what's up directly."

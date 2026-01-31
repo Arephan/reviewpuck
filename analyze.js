@@ -78,7 +78,7 @@ Diff:
 ${diff}`;
 
 function buildIntentPrompt(prMeta) {
-  return `Based on this PR title and description, explain what this PR is trying to accomplish in 3 sentences. Write in a conversational, human tone - not robotic or corporate. Be specific and helpful.
+  return `Based on this PR title and description, explain what this PR is trying to accomplish in 2-3 SHORT sentences. Write like you're explaining it to a teammate over coffee - casual, clear, human. Get to the point fast.
 
 PR Title: ${prMeta.title}
 PR Description: ${prMeta.body || 'No description provided'}
@@ -86,7 +86,7 @@ PR Description: ${prMeta.body || 'No description provided'}
 Code changes:
 ${diff.split('\n').slice(0, 50).join('\n')}
 
-Respond with ONLY 3 sentences explaining the intent. No preamble, no labels, just the sentences.`;
+Keep it under 60 words total. Be conversational but concise. No preamble, just the explanation.`;
 }
 
 function callAnthropic(prompt) {

@@ -1,39 +1,37 @@
 # 🔍 ReviewPal
 
-**Help humans review AI-generated code faster.**
+**AI-powered code review for any language.**
 
-> Traditional code review tools find bugs. This one helps you **understand** the code faster.
+> Let Claude review your code changes and catch issues before your teammates do.
 
-## ⏱️ Quick Start (5 minutes)
+## ⏱️ Quick Start (2 minutes)
 
-1. **Copy the workflow file** to your repo:
+1. **Add workflow file** to your repo:
 
 ```bash
 mkdir -p .github/workflows
-curl -o .github/workflows/ai-review.yml \
+curl -o .github/workflows/reviewpal.yml \
   https://raw.githubusercontent.com/Arephan/reviewpal/main/examples/github-action-workflow.yml
 ```
 
-2. **That's it!** The action runs on every PR with zero configuration needed.
+2. **Add your Anthropic API key:**
+   - Go to repo Settings → Secrets → Actions
+   - Add `ANTHROPIC_API_KEY` with your key
+   - Get a key at: https://console.anthropic.com
 
-**Optional:** Add your Anthropic API key to enable AI-powered summaries:
-- Go to repo Settings → Secrets → Actions
-- Add `ANTHROPIC_API_KEY` with your key
+3. **Create a PR** and watch ReviewPal analyze it! 🎉
 
 ---
 
 ## What It Does
 
-### Without API Key (Free, Static Analysis)
-- ✅ **Complexity scoring** - Identifies hard-to-review code
-- ✅ **React patterns** - Catches common React anti-patterns
-- ✅ **AI-isms detection** - Spots patterns common in AI-generated code
-- ✅ **Friendly suggestions** - Actionable fixes, not just complaints
+ReviewPal uses Claude AI to:
+- ✅ **Detect the language** automatically (Python, JS, Go, Rust, Java, etc.)
+- ✅ **Find code quality issues** - bugs, anti-patterns, security concerns
+- ✅ **Spot AI-generated patterns** - over-defensive code, verbose comments, over-abstraction
+- ✅ **Give actionable suggestions** - specific fixes, not vague advice
 
-### With API Key (Claude-powered)
-- ✅ Everything above, plus:
-- 📋 **What Changed & Why** - Summaries for each code change
-- 🔮 **Intent Analysis** - What was the AI likely trying to do?
+**Language agnostic** - works with any programming language!
 
 ---
 
@@ -42,48 +40,25 @@ curl -o .github/workflows/ai-review.yml \
 ```markdown
 ## 🔍 ReviewPal
 
-### 📄 `src/components/UserProfile.tsx`
+### 📄 `src/api/users.ts`
 
 <details>
-<summary>Lines 15-87</summary>
+<summary>Lines 45-89</summary>
 
-**🔮 I noticed some AI-isms:**
+**Language:** TypeScript
 
-**excessive-try-catch**
-13 try-catch blocks detected. AI tends to over-wrap code in error handlers.
+**Summary:** Added user authentication with token validation and error handling.
 
-💡 *Simpler approach:* Use a single try-catch at the operation boundary.
+**Issues Found:**
 
----
+🟡 **Excessive try-catch nesting (4 levels deep)**
+💡 *Fix:* Use a single try-catch at the function boundary. Let errors bubble up naturally.
 
-Hey! 👋 This could use some attention:
+🟡 **Missing input validation before database query**
+💡 *Fix:* Add schema validation using zod or joi before the database call.
 
-```
-fetchUsers()
-├─ try
-  ├─ try
-    ├─ try ← 4 levels deep!
-  ... +8 more nested blocks
-```
-
-**What's going on:**
-7 levels of nesting makes it hard to follow the logic.
-
-**Quick wins:**
-
-```typescript
-// Instead of 5+ nested try-catches, use one:
-try {
-  const response = await fetch(url);
-  const data = await response.json();
-  setState(data);
-} catch (error) {
-  setError(error?.message ?? 'Unknown error');
-}
-```
-
-**Why this matters:**
-Simpler code = faster reviews = fewer bugs slipping through.
+🟢 **Consider using a constant for the token expiry time**
+💡 *Fix:* Move magic number 3600 to a named constant: TOKEN_EXPIRY_SECONDS
 
 </details>
 ```
@@ -95,7 +70,7 @@ Simpler code = faster reviews = fewer bugs slipping through.
 ### GitHub Action (Recommended)
 
 ```yaml
-name: AI Code Review
+name: ReviewPal
 on:
   pull_request:
     types: [opened, synchronize]
@@ -114,7 +89,6 @@ jobs:
       - name: ReviewPal
         uses: Arephan/reviewpal@v1
         with:
-          # Optional: enables AI summaries
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
@@ -122,6 +96,9 @@ jobs:
 
 ```bash
 npm install -g reviewpal
+
+# Set your API key
+export ANTHROPIC_API_KEY=sk-ant-...
 
 # Review staged changes
 reviewpal
@@ -141,13 +118,10 @@ git diff main..feature | reviewpal -
 
 | Input | Description | Default |
 |-------|-------------|---------|
-| `anthropic_api_key` | Enables AI summaries | - |
+| `anthropic_api_key` | **Required** - Your Anthropic API key | - |
 | `max_hunks` | Max code blocks to analyze | 20 |
-| `skip_summary` | Skip AI summaries | false |
-| `skip_patterns` | Skip pattern detection | false |
-| `skip_complexity` | Skip complexity scoring | false |
+| `model` | Claude model to use | claude-sonnet-4-20250514 |
 | `comment_on_pr` | Post as PR comment | true |
-| `fail_on_high_complexity` | Fail if complexity > 7 | false |
 
 ### CLI Options
 
@@ -156,10 +130,7 @@ reviewpal --help
 
 Options:
   -g, --git <range>     Git diff range (e.g., HEAD~3..HEAD)
-  -f, --format <type>   Output: friendly, markdown, json, text
-  --no-summary          Skip AI summaries (no API needed)
-  --no-patterns         Skip pattern detection
-  --no-complexity       Skip complexity analysis
+  -f, --format <type>   Output: friendly, json
   -m, --max-hunks <n>   Max hunks to analyze (default: 20)
   --model <name>        Claude model (default: claude-sonnet-4-20250514)
   -q, --quiet           Minimal output
@@ -167,55 +138,43 @@ Options:
 
 ---
 
-## What It Catches
+## Supported Languages
 
-### React-Specific Patterns (No API Needed)
+**All of them!** 🌍
 
-| Pattern | Issue | Suggestion |
-|---------|-------|------------|
-| `excessive-try-catch` | AI wraps everything in try-catch | Use single try-catch + error boundaries |
-| `too-many-states` | 5+ useState hooks | Use useReducer or group related state |
-| `boolean-state-overload` | Many boolean flags | Use a single status enum |
-| `useEffect-cleanup` | Missing cleanup | Return cleanup function |
-| `memo-inline-object` | Inline objects break memo | Move styles outside component |
-| `excessive-console` | Debug logs left in | Remove or use proper logging |
+ReviewPal uses Claude AI to understand any programming language:
+- JavaScript, TypeScript, Python, Java, Go, Rust, C++, C#, Ruby, PHP, Kotlin, Swift...
+- Even SQL, YAML, Dockerfile, shell scripts, and more
 
-### Complexity Metrics
-
-| Metric | Threshold | Why It Matters |
-|--------|-----------|----------------|
-| Nesting Depth | > 3 | Hard to follow logic flow |
-| Cyclomatic Complexity | > 10 | Too many code paths |
-| Parameters | > 4 | Hard to remember arguments |
-| Line Count | > 50 | Can't see whole function |
-| Dependencies | > 10 | Too many responsibilities |
+Claude automatically detects the language and applies appropriate review standards.
 
 ---
 
 ## How It Works
 
-1. **Parse** the git diff into individual code hunks
-2. **Analyze** each hunk:
-   - Static analysis for complexity (instant, no API)
-   - React pattern detection (instant, no API)
-   - Claude API for summaries (optional, needs key)
-3. **Format** results as friendly PR comments
+1. **Parse** the git diff into code changes
+2. **Send to Claude** with context about the file and change
+3. **AI analyzes** for:
+   - Language detection
+   - Code quality issues
+   - AI-generated patterns
+   - Improvement opportunities
+4. **Format** results as friendly PR comments
 
 ---
 
-## Why This Exists
+## Why ReviewPal?
 
-Based on research of 1000+ developer complaints, the #1 issue with AI-generated code isn't bugs — it's **comprehension time**.
-
-AI code tends to be:
+**Problem:** AI-generated code is hard to review
 - Over-defensive (try-catch everywhere)
-- Over-verbose (comments explaining obvious things)
-- Over-engineered (abstractions that don't help)
+- Over-verbose (obvious comments)
+- Over-engineered (unnecessary abstractions)
 
-This tool helps reviewers:
-- Quickly identify areas that need attention
-- Understand what the code is trying to do
-- Get concrete suggestions, not vague advice
+**Solution:** Let AI review AI-generated code
+- Catches patterns humans miss
+- Works with any language
+- Gives specific, actionable feedback
+- Fast and consistent
 
 ---
 
@@ -233,20 +192,41 @@ npm install
 npm run build
 
 # Test locally
+export ANTHROPIC_API_KEY=sk-ant-...
 node dist/index.js --git HEAD~1
-
-# Run tests
-npm test
 ```
+
+---
+
+## API Key Safety
+
+Your `ANTHROPIC_API_KEY` is:
+- ✅ Stored in GitHub Secrets (encrypted)
+- ✅ Only accessible to your workflows
+- ✅ Never logged or exposed in output
+- ✅ Can be rotated anytime at console.anthropic.com
+
+---
+
+## Cost
+
+ReviewPal uses Claude Sonnet 4 by default (~$3 per million tokens).
+
+**Typical usage:**
+- Small PR (100 lines): ~$0.01
+- Medium PR (500 lines): ~$0.05  
+- Large PR (2000 lines): ~$0.20
+
+Set `max_hunks` to control costs on massive PRs.
 
 ---
 
 ## Contributing
 
-PRs welcome! Please:
-1. Keep suggestions actionable (not "consider...")
-2. Maintain the friendly tone
-3. Add tests for new patterns
+PRs welcome! Keep it:
+1. Language agnostic
+2. Actionable (not vague)
+3. Friendly in tone
 
 ---
 
@@ -256,4 +236,4 @@ MIT
 
 ---
 
-**Made to help humans review faster, not to replace human judgment.**
+**Made with Claude, for reviewing code written by Claude.** 🤖

@@ -1,5 +1,5 @@
 name: 'ReviewPal'
-description: 'Help humans review AI-generated code faster with comprehension aids'
+description: 'AI-powered code review for any language using Claude'
 author: 'Han Kim'
 
 branding:
@@ -8,8 +8,8 @@ branding:
 
 inputs:
   anthropic_api_key:
-    description: 'Anthropic API key for Claude analysis (optional - static analysis works without it)'
-    required: false
+    description: 'Anthropic API key for Claude analysis (REQUIRED)'
+    required: true
   github_token:
     description: 'GitHub token for posting comments (defaults to GITHUB_TOKEN)'
     required: false
@@ -22,36 +22,12 @@ inputs:
     description: 'Maximum number of hunks to analyze'
     required: false
     default: '20'
-  skip_summary:
-    description: 'Skip "What Changed & Why" analysis (requires API)'
-    required: false
-    default: 'false'
-  skip_patterns:
-    description: 'Skip Claude pattern detection (static React patterns still run)'
-    required: false
-    default: 'false'
-  skip_complexity:
-    description: 'Skip complexity analysis'
-    required: false
-    default: 'false'
   comment_on_pr:
     description: 'Post analysis as PR comment'
     required: false
     default: 'true'
-  inline_comments:
-    description: 'Post inline comments on specific lines'
-    required: false
-    default: 'true'
-  max_inline_comments:
-    description: 'Maximum inline comments to post (prevents spam)'
-    required: false
-    default: '10'
-  fail_on_high_complexity:
-    description: 'Fail workflow if high complexity detected'
-    required: false
-    default: 'false'
   format:
-    description: 'Output format: friendly, markdown, json, text'
+    description: 'Output format: friendly, json'
     required: false
     default: 'friendly'
 
@@ -115,24 +91,11 @@ runs:
       run: |
         cd ${{ github.action_path }}
         
-        # Build options
-        OPTIONS=""
-        if [ "${{ inputs.skip_summary }}" = "true" ] || [ -z "${{ inputs.anthropic_api_key }}" ]; then
-          OPTIONS="$OPTIONS --no-summary"
-        fi
-        if [ "${{ inputs.skip_patterns }}" = "true" ]; then
-          OPTIONS="$OPTIONS --no-patterns"
-        fi
-        if [ "${{ inputs.skip_complexity }}" = "true" ]; then
-          OPTIONS="$OPTIONS --no-complexity"
-        fi
-        
-        # Run analysis with friendly format
+        # Run analysis
         node dist/index.js ${{ steps.diff.outputs.diff_file }} \
           --format ${{ inputs.format }} \
           --max-hunks ${{ inputs.max_hunks }} \
-          --model ${{ inputs.model }} \
-          $OPTIONS > /tmp/analysis.md 2>&1 || true
+          --model ${{ inputs.model }} > /tmp/analysis.md 2>&1 || true
         
         # Export for outputs
         echo "analysis_markdown<<EOF" >> $GITHUB_OUTPUT
@@ -143,8 +106,7 @@ runs:
         node dist/index.js ${{ steps.diff.outputs.diff_file }} \
           --format json \
           --max-hunks ${{ inputs.max_hunks }} \
-          --model ${{ inputs.model }} \
-          $OPTIONS > /tmp/analysis.json 2>&1 || echo '{"files":[],"totalHunks":0,"aiCodeLikelihood":"low"}' > /tmp/analysis.json
+          --model ${{ inputs.model }} > /tmp/analysis.json 2>&1 || echo '{"files":[],"totalHunks":0,"aiCodeLikelihood":"low"}' > /tmp/analysis.json
         
         # Extract key metrics safely
         echo "total_files=$(jq '.files | length // 0' /tmp/analysis.json)" >> $GITHUB_OUTPUT

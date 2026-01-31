@@ -1,32 +1,21 @@
 /**
- * Claude API wrapper for AI analysis
+ * Claude API wrapper for AI code review
  */
-import { SummaryAnalysis, PatternAnalysis } from '../types.js';
+export interface AIReview {
+    summary: string;
+    issues: Array<{
+        severity: 'high' | 'medium' | 'low';
+        issue: string;
+        suggestion: string;
+    }>;
+    language: string;
+}
 /**
  * Initialize Claude client
  */
 export declare function initClaudeClient(apiKey?: string): void;
 /**
- * Solution 1: Generate "What Changed & Why" summary for a hunk
+ * Review code with AI (language agnostic)
  */
-export declare function generateSummary(hunkContent: string, context: string, filename: string, model?: string): Promise<SummaryAnalysis>;
-/**
- * Solution 2: Detect AI patterns in code
- */
-export declare function detectPatterns(code: string, filename: string, model?: string): Promise<PatternAnalysis>;
-/**
- * Batch analyze multiple hunks (more efficient API usage)
- */
-export declare function batchAnalyze(hunks: Array<{
-    content: string;
-    context: string;
-    filename: string;
-}>, options?: {
-    includeSummary?: boolean;
-    includePatterns?: boolean;
-    model?: string;
-}): Promise<Array<{
-    summary?: SummaryAnalysis;
-    patterns?: PatternAnalysis;
-}>>;
+export declare function reviewCode(code: string, filename: string, model?: string): Promise<AIReview>;
 //# sourceMappingURL=claude.d.ts.map

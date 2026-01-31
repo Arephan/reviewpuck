@@ -76,9 +76,21 @@ export interface ComplexityFlag {
   severity: 'warning' | 'critical';
 }
 
+// AI Review
+export interface AIReview {
+  summary: string;
+  issues: Array<{
+    severity: 'high' | 'medium' | 'low';
+    issue: string;
+    suggestion: string;
+  }>;
+  language: string;
+}
+
 // Combined analysis result for a hunk
 export interface HunkAnalysis {
   hunk: DiffHunk;
+  aiReview?: AIReview;
   summary?: SummaryAnalysis;
   patterns?: PatternAnalysis;
   complexity?: ComplexityAnalysis;

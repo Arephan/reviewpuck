@@ -1,15 +1,13 @@
 "use strict";
 /**
- * Claude API wrapper for AI analysis
+ * Claude API wrapper for AI code review
  */
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initClaudeClient = initClaudeClient;
-exports.generateSummary = generateSummary;
-exports.detectPatterns = detectPatterns;
-exports.batchAnalyze = batchAnalyze;
+exports.reviewCode = reviewCode;
 const sdk_1 = __importDefault(require("@anthropic-ai/sdk"));
 let client = null;
 /**
@@ -32,153 +30,65 @@ function getClient() {
     return client;
 }
 /**
- * Solution 1: Generate "What Changed & Why" summary for a hunk
+ * Review code with AI (language agnostic)
  */
-async function generateSummary(hunkContent, context, filename, model = 'claude-sonnet-4-20250514') {
-    const prompt = `You are a senior code reviewer helping another developer understand AI-generated code changes.
-
-Given this diff hunk from ${filename} and its surrounding context, provide a brief explanation.
-
-DIFF:
-\`\`\`
-${hunkContent}
-\`\`\`
-
-CONTEXT (surrounding code):
-\`\`\`
-${context.slice(0, 2000)}
-\`\`\`
-
-Respond in JSON format only:
-{
-  "what": "1-2 sentences describing what behavior changed",
-  "why": "1-2 sentences on the likely intent/purpose",
-  "watch": ["1-3 things the reviewer should verify"]
-}
-
-Keep it concise. The reviewer is experienced but unfamiliar with this specific code.
-Be specific about what actually changed, not generic statements.`;
-    const response = await getClient().messages.create({
-        model,
-        max_tokens: 500,
-        messages: [{ role: 'user', content: prompt }]
-    });
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
-    try {
-        // Extract JSON from response (handle markdown code blocks)
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            return defaultSummary();
-        }
-        const parsed = JSON.parse(jsonMatch[0]);
-        return {
-            what: parsed.what || 'Unable to determine what changed',
-            why: parsed.why || 'Intent unclear',
-            watch: Array.isArray(parsed.watch) ? parsed.watch : []
-        };
-    }
-    catch (e) {
-        console.error('Failed to parse summary response:', e);
-        return defaultSummary();
-    }
-}
-function defaultSummary() {
-    return {
-        what: 'Code changes detected',
-        why: 'Review manually for context',
-        watch: ['Check the changes carefully']
-    };
-}
-/**
- * Solution 2: Detect AI patterns in code
- */
-async function detectPatterns(code, filename, model = 'claude-sonnet-4-20250514') {
-    const prompt = `You are an expert at identifying AI-generated code patterns that make code harder to review.
-
-Analyze this code from ${filename} for common "AI-isms":
+async function reviewCode(code, filename, model = 'claude-sonnet-4-20250514') {
+    const prompt = `You are an expert code reviewer. Review this code change from ${filename}.
 
 CODE:
 \`\`\`
-${code.slice(0, 3000)}
+${code.slice(0, 4000)}
 \`\`\`
 
-Look for these specific patterns:
-1. "over-defensive" - Unnecessary try-catch blocks, null checks that TypeScript already handles
-2. "verbose-comments" - Comments explaining obvious syntax instead of intent (e.g., "// Loop through array")
-3. "over-abstraction" - Simple operations wrapped in unnecessary classes/factories
-4. "naming-chaos" - Mix of very long names and very short generic names in same scope
-5. "import-bloat" - More imports than actually needed
-6. "monolithic-function" - Function doing too many things that should be split
-7. "catch-all-error" - Generic error handling that hides actual issues
+Analyze for:
+1. **Language Detection** - Determine the programming language
+2. **Code Quality Issues** - Any problems, anti-patterns, or concerns
+3. **AI-Generated Patterns** - Signs this may be AI-generated (over-defensive, verbose, over-abstracted)
+4. **Improvement Suggestions** - Actionable fixes
 
 Respond in JSON format only:
 {
-  "patternsFound": [
+  "language": "detected programming language",
+  "summary": "1-2 sentence overview of what changed",
+  "issues": [
     {
-      "type": "pattern-type-from-above",
-      "lines": [line numbers array],
-      "issue": "What's wrong",
-      "simplerAlternative": "How to fix it (optional)"
+      "severity": "high|medium|low",
+      "issue": "What's wrong (be specific)",
+      "suggestion": "How to fix it (actionable)"
     }
-  ],
-  "overallAiLikelihood": "high|medium|low",
-  "keyQuestion": "A question the reviewer should ask themselves"
+  ]
 }
 
-Only report patterns you're confident about. If the code looks normal, return empty patternsFound array.
-Be specific about line numbers and issues.`;
+Only report real issues. If the code looks good, return empty issues array.
+Be specific and helpful, not generic or vague.`;
     const response = await getClient().messages.create({
         model,
-        max_tokens: 800,
+        max_tokens: 1500,
         messages: [{ role: 'user', content: prompt }]
     });
     const text = response.content[0].type === 'text' ? response.content[0].text : '';
     try {
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
-            return defaultPatternAnalysis();
+            return defaultReview();
         }
         const parsed = JSON.parse(jsonMatch[0]);
         return {
-            patternsFound: (parsed.patternsFound || []).map((p) => ({
-                type: p.type || 'unknown',
-                lines: Array.isArray(p.lines) ? p.lines : [],
-                issue: p.issue || '',
-                simplerAlternative: p.simplerAlternative
-            })),
-            overallAiLikelihood: parsed.overallAiLikelihood || 'low',
-            keyQuestion: parsed.keyQuestion
+            language: parsed.language || 'Unknown',
+            summary: parsed.summary || 'Code changes detected',
+            issues: Array.isArray(parsed.issues) ? parsed.issues : []
         };
     }
     catch (e) {
-        console.error('Failed to parse patterns response:', e);
-        return defaultPatternAnalysis();
+        console.error('Failed to parse AI response:', e);
+        return defaultReview();
     }
 }
-function defaultPatternAnalysis() {
+function defaultReview() {
     return {
-        patternsFound: [],
-        overallAiLikelihood: 'low'
+        language: 'Unknown',
+        summary: 'Unable to analyze code',
+        issues: []
     };
-}
-/**
- * Batch analyze multiple hunks (more efficient API usage)
- */
-async function batchAnalyze(hunks, options = {}) {
-    const { includeSummary = true, includePatterns = true, model = 'claude-sonnet-4-20250514' } = options;
-    // Process in parallel with rate limiting
-    const results = await Promise.all(hunks.map(async (hunk, index) => {
-        // Simple rate limiting: stagger requests
-        await new Promise(resolve => setTimeout(resolve, index * 100));
-        const result = {};
-        if (includeSummary) {
-            result.summary = await generateSummary(hunk.content, hunk.context, hunk.filename, model);
-        }
-        if (includePatterns) {
-            result.patterns = await detectPatterns(hunk.content, hunk.filename, model);
-        }
-        return result;
-    }));
-    return results;
 }
 //# sourceMappingURL=claude.js.map

@@ -1,0 +1,29 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="#8B4513"/>
+  
+  <!-- Left ear -->
+  <circle cx="140" cy="140" r="80" fill="#654321"/>
+  
+  <!-- Right ear -->
+  <circle cx="372" cy="140" r="80" fill="#654321"/>
+  
+  <!-- Face -->
+  <circle cx="256" cy="280" r="180" fill="#A0522D"/>
+  
+  <!-- Left eye -->
+  <circle cx="200" cy="250" r="20" fill="#000000"/>
+  
+  <!-- Right eye -->
+  <circle cx="312" cy="250" r="20" fill="#000000"/>
+  
+  <!-- Snout -->
+  <ellipse cx="256" cy="320" rx="60" ry="50" fill="#D2691E"/>
+  
+  <!-- Nose -->
+  <ellipse cx="256" cy="310" rx="25" ry="20" fill="#000000"/>
+  
+  <!-- Mouth -->
+  <path d="M 256 330 Q 230 350 220 340 M 256 330 Q 282 350 292 340" 
+        stroke="#000000" stroke-width="4" fill="none" stroke-linecap="round"/>
+</svg>

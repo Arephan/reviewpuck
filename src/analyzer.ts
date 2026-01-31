@@ -22,14 +22,6 @@ export function getEmojiForSeverity(severity: Severity): string {
 }
 
 /**
- * Format inline comment body
- */
-function formatInlineCommentBody(comment: InlineComment): string {
-  const emoji = getEmojiForSeverity(comment.severity);
-  return comment.body.trim();
-}
-
-/**
  * Parse diff to extract line numbers for added/modified lines
  */
 function parseDiffLineNumbers(patch: string): number[] {
@@ -173,18 +165,23 @@ Guidelines:
     estimatedReadTimeMinutes: number;
   }>(systemPrompt, userPrompt, { maxTokens: 4096 });
 
-  // Format comments
-  const comments: InlineComment[] = response.comments.map((c) => ({
-    file: c.file,
-    line: c.line,
-    title: c.title,
-    severity: c.severity,
-    body: `${getEmojiForSeverity(c.severity)} **${c.title}**
+  // Format comments with collapsible details
+  const comments: InlineComment[] = response.comments.map((c) => {
+    const emoji = getEmojiForSeverity(c.severity);
+    return {
+      file: c.file,
+      line: c.line,
+      title: c.title,
+      severity: c.severity,
+      body: `<details>
+<summary>${emoji} <strong>${c.title}</strong></summary>
 
-**What:** ${c.what}
-**Why:** ${c.why}
-**Action:** ${c.action}`,
-  }));
+**What:** ${c.what}  
+**Why:** ${c.why}  
+**Action:** ${c.action}
+</details>`,
+    };
+  });
 
   return {
     comments,

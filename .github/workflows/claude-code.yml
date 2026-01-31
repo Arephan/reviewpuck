@@ -25,16 +25,14 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          claude_args: "--max-tokens 300"
           custom_instructions: |
-            BE ULTRA BRIEF. Your response MUST fit in 200 tokens total.
+            Use this EXACT template. Fill in only the [brackets]. Do not add anything extra.
             
-            Format:
             # 🔍 Code Review
             ## What's this PR doing?
-            [ONE sentence: what it adds]
+            [Component name] component for [purpose].
             
-            ## Review Summary  
-            [ONE line: ✅ Looks good OR ⚠️ Found X issues: list]
+            ## Review Summary
+            [✅ Looks good OR ⚠️ Found X issues: brief list]
             
-            For questions: Answer in ONE sentence only.
+            For line questions: One short answer, period.

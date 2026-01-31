@@ -288,10 +288,14 @@ Found ${commentLinks.length} items for review (~${analysis.estimatedReadTimeMinu
         for (const item of items) {
             const emoji = getEmojiForSeverity(item.severity);
             // Make each finding collapsible with full details
-            navigation += `<details>\n<summary>${index}. ${emoji} <strong>${item.title}</strong> → <code>${item.path}:${item.line}</code></summary>\n\n`;
-            navigation += `${item.body}\n\n`;
-            navigation += `[View in diff →](${item.path}#L${item.line})\n\n`;
-            navigation += `</details>\n\n`;
+            const detailsOpen = '<details>';
+            const detailsClose = '</details>';
+            const summaryOpen = '<summary>';
+            const summaryClose = '</summary>';
+            navigation += detailsOpen + '\n' + summaryOpen + index + '. ' + emoji + ' <strong>' + item.title + '</strong> → <code>' + item.path + ':' + item.line + '</code>' + summaryClose + '\n\n';
+            navigation += item.body + '\n\n';
+            navigation += '[View in diff →](' + item.path + '#L' + item.line + ')\n\n';
+            navigation += detailsClose + '\n\n';
             index++;
         }
         navigation += '</details>\n\n';

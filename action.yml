@@ -1,0 +1,36 @@
+name: 'AI PR Helper'
+description: 'AI-powered PR review helper - catches massive PRs, suggests splits, explains code on demand'
+author: 'Han Kim'
+
+branding:
+  icon: 'git-pull-request'
+  color: 'purple'
+
+inputs:
+  anthropic-api-key:
+    description: 'Anthropic API key for Claude'
+    required: true
+  github-token:
+    description: 'GitHub token (defaults to GITHUB_TOKEN)'
+    required: false
+    default: ${{ github.token }}
+  mode:
+    description: 'Operation mode: auto, draft-only, ready-only, interactive-only'
+    required: false
+    default: 'auto'
+  max-lines:
+    description: 'Maximum lines before suggesting split (default: 500)'
+    required: false
+    default: '500'
+  max-read-time:
+    description: 'Maximum read time in minutes before suggesting split (default: 10)'
+    required: false
+    default: '10'
+  model:
+    description: 'Claude model to use (default: claude-sonnet-4-20250514)'
+    required: false
+    default: 'claude-sonnet-4-20250514'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

@@ -1,0 +1,7 @@
+node_modules/
+*.log
+.env
+.env.local
+
+# Keep dist/ for GitHub Action (it needs to be committed)
+# dist/

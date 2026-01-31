@@ -3,18 +3,21 @@ name: Answer Questions
 on:
   issue_comment:
     types: [created]
+  pull_request_review_comment:
+    types: [created]
 
 permissions:
   pull-requests: write
   issues: write
+  contents: read
 
 jobs:
   answer:
     runs-on: ubuntu-latest
     # Only answer if it's on a PR and has a question mark
     if: |
-      github.event.issue.pull_request != null && 
-      contains(github.event.comment.body, '?')
+      (github.event.issue.pull_request != null || github.event.pull_request != null) && 
+      (contains(github.event.comment.body, '?') || contains(github.event.review_comment.body, '?'))
     
     steps:
       - name: Answer Question
@@ -29,7 +32,7 @@ jobs:
               return new Promise((resolve, reject) => {
                 const data = JSON.stringify({
                   model: 'claude-opus-4-20250514',
-                  max_tokens: 512,
+                  max_tokens: 1024,
                   messages: [{ role: 'user', content: prompt }]
                 });
 
@@ -66,29 +69,76 @@ jobs:
               });
             }
             
+            // Determine PR number and question based on event type
+            let prNumber, question, isLineComment = false, lineContext = '';
+            
+            if (context.eventName === 'pull_request_review_comment') {
+              // Line-specific comment
+              prNumber = context.payload.pull_request.number;
+              question = context.payload.comment.body;
+              isLineComment = true;
+              lineContext = `File: ${context.payload.comment.path}\nLine: ${context.payload.comment.line || context.payload.comment.original_line}\n`;
+            } else {
+              // General PR comment
+              prNumber = context.issue.number;
+              question = context.payload.comment.body;
+            }
+            
+            // Fetch PR details
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: context.issue.number
+              pull_number: prNumber
             });
             
-            const question = context.payload.comment.body;
-            const prompt = `You are helping a developer understand a PR. Answer their question clearly.
+            // Fetch PR files
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            // Build file context (limit to first 5 files to avoid token limits)
+            let fileContext = files.slice(0, 5).map(file => {
+              const status = file.status === 'added' ? '(new)' : file.status === 'removed' ? '(deleted)' : '(modified)';
+              return `\n### ${file.filename} ${status}\n\`\`\`\n${file.patch || '(no changes shown)'}\n\`\`\``;
+            }).join('\n');
+            
+            if (files.length > 5) {
+              fileContext += `\n\n... and ${files.length - 5} more files`;
+            }
+            
+            const prompt = `You are helping a developer understand a Pull Request. Answer their question clearly and helpfully.
 
-PR: ${pr.title}
-Question: ${question}
+PR Title: ${pr.title}
+PR Description: ${pr.body || '(no description)'}
 
-Answer in 2-3 sentences. Be helpful and human.`;
+Files Changed:${fileContext}
+
+${isLineComment ? lineContext : ''}Question: ${question}
+
+Answer in 2-4 sentences. Be specific about the code. Reference file names and line numbers when relevant.`;
 
             try {
               const answer = await callAnthropic(prompt, process.env.ANTHROPIC_API_KEY);
               
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: `${answer}\n\n<sub>🤖 AI answer</sub>`
-              });
+              // Reply to the comment
+              if (context.eventName === 'pull_request_review_comment') {
+                await github.rest.pulls.createReplyForReviewComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber,
+                  comment_id: context.payload.comment.id,
+                  body: `${answer}\n\n<sub>🤖 AI answer</sub>`
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: `${answer}\n\n<sub>🤖 AI answer</sub>`
+                });
+              }
             } catch (error) {
               console.error('Failed:', error.message);
             }

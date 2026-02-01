@@ -175,9 +175,9 @@ runs:
                 side: 'RIGHT'
               });
               
-              // Save comment link for summary (use #r{id} anchor format)
+              // Save comment link for summary (use #discussion_r{id} anchor format)
               const commentId = comment.data.id;
-              const commentAnchor = `#r${commentId}`;
+              const commentAnchor = `#discussion_r${commentId}`;
               
               commentLinks.push({
                 type: item.type,
@@ -219,17 +219,25 @@ runs:
           
           let summary = '';
           
-          // Add friendly PR explanation
+          // Add PR summary with styling
           if (prSummary) {
-            summary += `## 📋 What is this PR about:\n\n${prSummary}\n\n`;
+            summary += `## 📋 What is this PR about\n\n`;
+            summary += `${prSummary}\n\n`;
+            summary += `---\n\n`;
           }
           
-          summary += '**Here are some suggestions:**\n\n';
+          summary += `## 🔍 Issues Found\n\n`;
+          summary += `| Category | Count | Details |\n`;
+          summary += `|----------|-------|----------|\n`;
+          
           for (const [type, items] of Object.entries(issuesByType)) {
             const emoji = EMOJI_MAP[type] || '⚠️';
             const links = items.map(i => `[${i.num}](${i.url})`).join(' ');
-            summary += `${emoji} **${items.length} ${type.toUpperCase()}**: ${links}\n`;
+            const typeLabel = type.toUpperCase().replace('-', ' ');
+            summary += `| ${emoji} **${typeLabel}** | ${items.length} | ${links} |\n`;
           }
+          
+          summary += `\n*Click the numbers to jump to specific issues in the code*`;
           
           // Post or update summary comment
           const marker = '<!-- reviewpal -->';

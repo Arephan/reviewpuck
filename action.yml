@@ -105,6 +105,7 @@ runs:
         # Also run JSON for structured data
         node dist/index.js ${{ steps.diff.outputs.diff_file }} \
           --format json \
+          --quiet \
           --max-hunks ${{ inputs.max_hunks }} \
           --model ${{ inputs.model }} > /tmp/analysis.json 2>&1 || echo '{"files":[],"totalHunks":0,"aiCodeLikelihood":"low"}' > /tmp/analysis.json
         

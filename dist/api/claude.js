@@ -51,7 +51,7 @@ Ignore: style, minor optimizations, naming, comments, anything non-critical.
 Respond in JSON:
 {
   "language": "language name",
-  "summary": "Explain what this PR does in a friendly, conversational way. Be encouraging and specific. Use relevant emojis (2-4 total). Write 5-10 sentences covering: what changed, why it's useful, what you like about the approach, and what the code accomplishes. Make it engaging and human!",
+  "summary": "Factual summary of what this PR does. Use short, declarative sentences. State what it adds, what it changes, what functionality it provides, and what it doesn't include. Mention risk level if relevant (high-risk changes, low-risk refactor, etc.). Be neutral and technical. 3-5 sentences.",
   "critical": [
     {
       "type": "security|crash|data-loss|performance",
